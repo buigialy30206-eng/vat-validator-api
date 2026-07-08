@@ -38,7 +38,7 @@ class VATResult(BaseModel):
 
 
 def curl_get(url: str) -> dict:
-    cmd = ["curl", "-s", "--connect-timeout", "8", "--max-time", "12", url]
+    cmd = ["curl", "-s", "-H", "Accept: application/json", "--connect-timeout", "10", "--max-time", "15", url]
     r = subprocess.run(cmd, capture_output=True, text=True)
     return _json.loads(r.stdout) if r.returncode == 0 and r.stdout else {}
 
