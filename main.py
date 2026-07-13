@@ -66,7 +66,7 @@ def validate_vat(country: str, vat: str) -> VATResult:
     )
 
 
-@app.get("/health")
+@app.api_route("/health", methods=["GET", "HEAD"])
 async def health():
     return {"status": "ok", "source": "EU VIES"}
 
