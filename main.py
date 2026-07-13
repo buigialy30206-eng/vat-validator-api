@@ -92,7 +92,7 @@ async def health():
 
 @app.get("/")
 async def root():
-    return {"service": "EU VAT Validator API", "version": "1.1.0"}
+    return {"service": "EU VAT Validator API", "version": "1.1.0", "related": ["Currency Converter API"]}
 
 @app.get("/validate", response_model=VATResult)
 async def validate(vat: str = Query(..., description="Full VAT number, e.g. DE814584193")):
