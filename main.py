@@ -4,30 +4,14 @@ Validates European VAT numbers via EU VIES (official, free, no API key).
 """
 import subprocess, json as _json, time, threading
 from typing import Optional
-from fastapi import FastAPI, Depends, Query, HTTPException
+from fastapi import Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-
-import time as _t, threading as _th
-_rl_win, _rl_max, _rl_hits, _rl_lk = 60, 60, {}, _th.Lock()
-
-async def _rate_limit(request):
-    from fastapi import Request, HTTPException
-    ip = (request.headers.get('X-Forwarded-For','') or request.headers.get('X-Real-IP','') or (request.client.host if request.client else '127.0.0.1')).split(',')[0].strip()
-    now = _t.time()
-    with _rl_lk:
-        e = _rl_hits.get(ip)
-        if e:
-            if now - e['s'] > _rl_win: e['s'], e['c'] = now, 1
-            else:
-                e['c'] += 1
-                if e['c'] > _rl_max: raise HTTPException(429, 'Too many requests')
-        else: _rl_hits[ip] = {'s': now, 'c': 1}
-    return True
+from ratelimit import RateLimitMiddleware
 
 app = FastAPI(title="EU VAT Validator API", version="1.1.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
-
+app.add_middleware(RateLimitMiddleware)
 
 VIES_URL = "https://ec.europa.eu/taxation_customs/vies/rest-api/ms/{country}/vat/{vat}"
 
@@ -45,7 +29,6 @@ _cache = {}
 _cache_lock = threading.Lock()
 CACHE_TTL = 86400  # 24 hours — VAT numbers don't change often
 
-
 class VATResult(BaseModel):
     vat_number: str
     country_code: str
@@ -56,7 +39,6 @@ class VATResult(BaseModel):
     request_date: Optional[str] = None
     error: str = ""
 
-
 def curl_get(url: str) -> dict:
     cmd = ["curl", "-s", "-H", "Accept: application/json",
            "--connect-timeout", "8", "--max-time", "12", url]
@@ -65,7 +47,6 @@ def curl_get(url: str) -> dict:
         return _json.loads(r.stdout) if r.returncode == 0 and r.stdout else {}
     except:
         return {}
-
 
 def validate_vat(country: str, vat: str) -> VATResult:
     full_vat = f"{country.upper()}{vat}"
@@ -107,16 +88,13 @@ def validate_vat(country: str, vat: str) -> VATResult:
 
     return result
 
-
 @app.api_route("/health", methods=["GET", "HEAD"])
 async def health():
     return {"status": "ok", "source": "EU VIES", "cache_size": len(_cache)}
 
-
 @app.get("/")
 async def root():
     return {"service": "EU VAT Validator API", "version": "1.1.0"}
-
 
 @app.get("/validate", response_model=VATResult)
 async def validate(vat: str = Query(..., description="Full VAT number, e.g. DE814584193")):
@@ -125,7 +103,6 @@ async def validate(vat: str = Query(..., description="Full VAT number, e.g. DE81
     country = vat[:2].upper()
     number = vat[2:].strip()
     return validate_vat(country, number)
-
 
 @app.get("/countries")
 async def list_countries():
