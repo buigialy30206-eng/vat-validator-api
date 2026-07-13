@@ -4,7 +4,7 @@ Validates European VAT numbers via EU VIES (official, free, no API key).
 """
 import subprocess, json as _json, time, threading
 from typing import Optional
-from fastapi import Query, HTTPException
+from fastapi import FastAPI, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from ratelimit import RateLimitMiddleware
