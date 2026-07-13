@@ -25,7 +25,7 @@ async def _rate_limit(request):
         else: _rl_hits[ip] = {'s': now, 'c': 1}
     return True
 
-app = FastAPI(title="EU VAT Validator API", version="1.1.0", dependencies=[Depends(_rate_limit)])
+app = FastAPI(title="EU VAT Validator API", version="1.1.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 
